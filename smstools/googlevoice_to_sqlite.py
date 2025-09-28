@@ -11,10 +11,9 @@ import time, sys, os, datetime, argparse
 import re, atexit
 import xml.etree.ElementTree
 from copy import deepcopy
-from dateutil import tz
-from dateutil.parser import *
-import htmlentitydefs
-import sqlite3, csv, codecs
+from dateutil import tz, parser as dateutil_parser
+from html import entities
+import sqlite3, csv
 import core
 
 
@@ -88,16 +87,16 @@ def unescape(text):
         if text[:2] == "&#":
             # character reference
             try:
-                if text[:3] == "&#x":
-                    return unichr(int(text[3:-1], 16))
-                else:
-                    return unichr(int(text[2:-1]))
+                if text[:3] == "&#x": # hex
+                    return chr(int(text[3:-1], 16))
+                else: # dec
+                    return chr(int(text[2:-1]))
             except ValueError:
                 pass
         else:
             # named entity
             try:
-                text = unichr(htmlentitydefs.name2codepoint[text[1:-1]])
+                text = chr(entities.name2codepoint[text[1:-1]])
             except KeyError:
                 pass
         return text # leave as is
@@ -105,7 +104,7 @@ def unescape(text):
 
 #Parses a Gvoice-formatted date into a datetime object
 def parse_date (datestring):
-    returntime = parse(datestring).astimezone(tz.tzutc())
+    returntime = dateutil_parser.parse(datestring).astimezone(tz.tzutc())
     return returntime.replace(tzinfo = None)
 
 
@@ -147,7 +146,7 @@ def find_Contact(node):
 
     #name
     contact_obj.name = contactnode.findtext(as_xhtml('./span[@class="fn"]'))
-    if contact_obj.name != None and len(contact_obj.name) == 0: #If a blank string. Should be an isinstance
+    if contact_obj.name is not None and len(contact_obj.name) == 0: #If a blank string.
         contact_obj.name = None
     #phone number
     contactphonenumber = re.search('\d+', contactnode.attrib['href'])
@@ -162,9 +161,9 @@ def process_TextConversation(textnodes, onewayname): #a list of texts, and the t
     for i in textnodes:
         textmsg = core.Text()
         textmsg.contact = find_Contact(i)
-        if text_collection.contact.test() == False: #if we don't have a contact for this conversation yet
-                if textmsg.contact.name != None:    #if contact not self
-                    text_collection.contact = deepcopy(textmsg.contact)    #They are other participant
+        if not text_collection.contact.test(): #if we don't have a contact for this conversation yet
+            if textmsg.contact.name is not None:    #if contact not self
+                text_collection.contact = deepcopy(textmsg.contact)    #They are other participant
         textmsg.date =parse_date(i.find(as_xhtml('./abbr[@class="dt"]')).attrib["title"])
  #date
         textmsg.text = unescape(i.findtext(as_xhtml('./q'))) #Text. TO DO: html decoder
@@ -182,7 +181,7 @@ def process_Call(audionode):
     call_obj.date = parse_date(audionode.find(as_xhtml('./abbr[@class="published"]')).attrib["title"])
     #duration
     duration_node = audionode.findtext(as_xhtml('./abbr[@class="duration"]'))
-    if duration_node != None:
+    if duration_node is not None:
         call_obj.duration = parse_time(duration_node)
     #Call type (Missed, Recieved, Placed)
     call_obj.calltype = get_label(audionode)
@@ -199,7 +198,7 @@ def process_Audio(audionode):
     #print audio_obj.date
     #print audio_obj.duration
     descriptionNode = audionode.find(as_xhtml('./span[@class="description"]'))
-    if descriptionNode != None and len(descriptionNode.findtext(as_xhtml('./span[@class="full-text"]'))) > 0:
+    if descriptionNode is not None and len(descriptionNode.findtext(as_xhtml('./span[@class="full-text"]'))) > 0:
         #fullText
         fullText = descriptionNode.findtext(as_xhtml('./span[@class="full-text"]')) #TO DO: html decoder
         if fullText != 'Unable to transcribe this message.':
@@ -241,7 +240,7 @@ class gvoiceconn(sqlite3.Connection):
         open(path, 'w').close() #wipes file in same path, since old records cannot be relied upon (name changes, etc.)
         sqlite3.Connection.__init__(self, path, detect_types=sqlite3.PARSE_DECLTYPES|sqlite3.PARSE_COLNAMES)
         #self = sqlite3.connect() #connect
-        with open('googlevoice_to_sqlite_initdb.sql', 'r') as initdb:
+        with open(os.path.join(os.path.dirname(__file__), '..', 'initdb', 'init_googlevoice.sql'), 'r') as initdb:
             self.executescript(initdb.read()) #create data structures needed, ad defined in external file\
         #dictonoary to keep track of rowcount in each table
         self.rowcount = dict.fromkeys(('Contact', 'Audio', 'TextConversation', 'TextMessage', 'PhoneCall', 'Voicemail'), 0)
@@ -255,14 +254,14 @@ class gvoiceconn(sqlite3.Connection):
 
     #imports a Contact object into the database
     def import_Contact(self, contact):
-        if contact.name != None:
+        if contact.name is not None:
             contact.name = contact.name.replace('_', ' ') #zap underscores in names
         #sees if contact id for contact already exists
         contactid = self.execute('SELECT ContactID FROM Contact \
             WHERE (Name = ? OR COALESCE(Name,?) is NULL) \
             AND  (PhoneNumber = ? OR COALESCE(PhoneNumber,?) is NULL)',
             (contact.name, contact.name, contact.phonenumber, contact.phonenumber)).fetchone()
-        if contactid != None: #if contact exists, that's all we need
+        if contactid is not None: #if contact exists, that's all we need
             return contactid[0]
         else: #Contact ID will be new row we create
             contactid = self.getmaxid('Contact')
@@ -279,8 +278,8 @@ class gvoiceconn(sqlite3.Connection):
             self.execute ('INSERT INTO TextMessage (TextMessageID, TextConversationID, TimeRecordedUTC, Incoming, Text) VALUES (?, ?, ?, ?, ?)', (
                           self.getmaxid('TextMessage'),
                           conversationid,
-                          textmsg.date,
-                          0 if textmsg.contact.name == None else 1, #if None, means self
+                          textmsg.date, # This is a datetime object
+                          0 if textmsg.contact.name is None else 1, #if None, means self
                           textmsg.text
                           ))
 
@@ -296,7 +295,7 @@ class gvoiceconn(sqlite3.Connection):
                             callrecord.date,
                             callrecord.duration
                         ))
-        except:
+        except Exception:
             if callrecord.contact.name == 'Google Voice': #Intro go Google Voice - voicemail with no audio
                 pass
             else:
@@ -316,7 +315,7 @@ class gvoiceconn(sqlite3.Connection):
                 'select PhoneCallID from PhoneCall WHERE ContactID = ? and strftime("%s", ?) - strftime("%s", TimeStartedUTC) between 0 and Duration',
                 (contactid, audiorecord.date)
                 )
-            if callidrow == None:
+            if callidrow is None:
                 self.unmatched_recordings += audiorecord
                 if not insert_unmatched_audio:
                     return 1
@@ -359,11 +358,10 @@ class gvoiceconn(sqlite3.Connection):
         views += ((str.lower(name) + 's.csv', 'flat' + name) for name in ('PhoneCall', 'TextMessage', 'Voicemail', 'Recording'))
         for view in views:
             query = self.execute('SELECT * FROM %s' % view[1])
-            with open(outdir + view[0], 'wb') as csvfile:
+            with open(outdir + view[0], 'w', newline='', encoding='utf-8') as csvfile:
                 csvwriter = csv.writer(csvfile)
                 csvwriter.writerow([i[0] for i in query.description])
-                fetch = [[unicode( r ).encode("utf-8") for r in st] for st in query.fetchall()]
-                csvwriter.writerows(fetch)
+                csvwriter.writerows(query.fetchall())
 
 
 ####-----------------
@@ -375,18 +373,18 @@ def getobjs(path, encoding, force):
         if fl.endswith('.html'): #no mp3 files
             errorHandle = 'strict' if not force else 'replace'
             try:
-                with codecs.open(os.path.join(path, fl), 'r', encoding, errors=errorHandle) as f: #read the file
-                    tree = xml.etree.ElementTree.fromstring(f.read().replace('<br>', "\r\n<br />").encode("utf-8")) #read properly-formatted html
+                with open(os.path.join(path, fl), 'r', encoding=encoding, errors=errorHandle) as f: #read the file
+                    tree = xml.etree.ElementTree.fromstring(f.read().replace('<br>', "\r\n<br />").encode('utf-8')) #read properly-formatted html
             except xml.etree.ElementTree.ParseError:
-                print "\nproblem parsing " + str(fl)
-                if not force: quit()
+                print("\nproblem parsing " + str(fl))
+                if not force: sys.exit(1)
             except ValueError:
-                print "\nproblem reading file {0} with encoding {1}".format(fl, encoding)
-                print "Try using a different encoding or use --force"
-                if not force: quit()
+                print("\nproblem reading file {0} with encoding {1}".format(fl, encoding))
+                print("Try using a different encoding or use --force")
+                if not force: sys.exit(1)
             record = None #reset the variable
             record = process_file(tree, fl) #do the loading
-            if record != None:
+            if record is not None:
                 yield (fl, record) #return record and name
 
 
@@ -437,7 +435,7 @@ if __name__ == '__main__':
     listline = LineWriter()
     try:
         for i in getobjs(conversationlocation, args.encoding, args.force): #load each file into db, depending on type
-            listline.write(i[0]) #write filename to console
+            listline.write(str(i[0])) #write filename to console
             record = i[1]
             if isinstance(record, TextConversation): #set of text messages
                 gvconn.import_TextConversation(record)
@@ -452,7 +450,7 @@ if __name__ == '__main__':
             i = None
         gvconn.fixnullrecords() #fixed bad contacts - see there for description
         gvconn.commit()
-    except:
+    except Exception:
         gvconn.commit()
         raise
     if args.csv :
@@ -460,5 +458,4 @@ if __name__ == '__main__':
         if not os.path.exists( path ):
             os.mkdir( path )
         gvconn.exportcsv( path )
-        print 'CSVs created.'
-
+        print('CSVs created.')

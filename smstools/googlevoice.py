@@ -1,4 +1,5 @@
 import time, sqlite3, csv
+from datetime import datetime
 import core
 
 class GoogleVoice:
@@ -22,13 +23,13 @@ class GoogleVoice:
             ORDER BY TextMessage.TextMessageID ASC')
         for row in query:
             try:
-                ttime = time.mktime(time.strptime(row[1], '%Y-%m-%d %H:%M:%S.%f'))
+                dt_obj = datetime.strptime(row[1], '%Y-%m-%d %H:%M:%S.%f')
             except ValueError:
-                ttime = time.mktime(time.strptime(row[1], '%Y-%m-%d %H:%M:%S'))
-            txt = core.Text(num=row[4], date=long(ttime*1000), incoming=(row[2]==1), body=row[3])
+                dt_obj = datetime.strptime(row[1], '%Y-%m-%d %H:%M:%S')
+            ttime = dt_obj.timestamp()
+            txt = core.Text(num=row[4], date=int(ttime*1000), incoming=(row[2]==1), body=row[3])
             texts.append(txt)
         return texts
 
     def write(self, texts, outfilepath):
         raise Exception("Can't output to Google Voice, sorry.")
-
