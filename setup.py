@@ -19,7 +19,7 @@ setup(
     scripts=['bin/smstools'],
     url='https://github.com/t413/SMS-Tools',
     license='CC BY-NC-SA 3.0 US',
-    install_requires=['python-dateutil'],
+    install_requires=['python-dateutil', 'setuptools'],
     extras_require = {
         'colors':  ["blessings>=1.5.0"],
         'autocomplete':  ["argcomplete>=0.8.0"],
