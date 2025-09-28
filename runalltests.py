@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import os, sys
 BASE_DIR = os.path.dirname(__file__)
 sys.path.insert(0, os.path.join(BASE_DIR,'smstools'))
@@ -18,4 +18,3 @@ for test_module in test_modules:
     suite.addTest(unittest.defaultTestLoader.loadTestsFromName(test_module))
 
 unittest.TextTestRunner().run(suite)
-

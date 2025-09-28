@@ -45,7 +45,7 @@ class IOS6:
             number = handles[row[0]][0] if row[0] in handles else "unknown"
             text = core.Text(
                 num = number,
-                date = long((row[1] + 978307200)*1000),
+                date = int((row[1] + 978307200)*1000),
                 incoming = row[2] == 0,
                 body = row[3],
                 chatroom = row[4],
@@ -54,7 +54,7 @@ class IOS6:
         return texts
 
     def write(self, texts, outfilepath):
-        print "Creating empty iOS 6 SQLITE db"
+        print("Creating empty iOS 6 SQLITE db")
         conn = sqlite3.connect(outfilepath)
         conn.executescript(INIT_DB_SQL)
 
@@ -64,7 +64,7 @@ class IOS6:
         conn.commit()
         cursor.close()
         conn.close()
-        print "changes saved to", outfilepath
+        print("changes saved to", outfilepath)
 
 
     def write_cursor(self, texts, cursor):
@@ -109,17 +109,17 @@ class IOS6:
                             VALUES (?,?)", [chat_id, handle_id])
                     except: pass #don't add handle joins for unknown contacts.
             except:
-                print core.term.red("something failed at: %s") % (txt)
+                print(core.term.red("something failed at: %s") % (txt))
                 raise
 
-        print "built handles table with %i, chat with %i, chat_handle_join with %i entries" \
-            % (len(handles_lookup), len(chat_lookup), len(chat_participants))
+        print("built handles table with %i, chat with %i, chat_handle_join with %i entries" \
+            % (len(handles_lookup), len(chat_lookup), len(chat_participants)))
 
 
         for txt in texts:
             chat_key = txt.chatroom if txt.chatroom else txt.num
             handle_i = handles_lookup[core.cleanNumber(txt.num)] if core.cleanNumber(txt.num) in handles_lookup else 0
-            idate = long( (float(txt.date)/1000) - 978307200)
+            idate = int( (float(txt.date)/1000) - 978307200)
             from_me = 0 if txt.incoming else 1
             guid = str(uuid.uuid1())
 
@@ -133,7 +133,7 @@ class IOS6:
             cursor.execute( "INSERT INTO chat_message_join (chat_id, message_id) \
                 VALUES (?,?)", [chat_id, message_id])
 
-        print "built messages table with %i entries" % len(texts)
+        print("built messages table with %i entries" % len(texts))
 
 
 INIT_DB_SQL = "\
@@ -162,5 +162,3 @@ INIT_DB_SQL = "\
     CREATE INDEX message_idx_handle ON message(handle_id, date);\
     CREATE INDEX chat_message_join_idx_message_id ON chat_message_join(message_id, chat_id);\
     COMMIT; "
-
-

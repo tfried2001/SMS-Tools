@@ -22,13 +22,13 @@ class Android:
              FROM sms \
              ORDER BY _id ASC;')
         for row in query:
-            txt = core.Text(num=row[0],date=long(row[1]),incoming=(row[2]==2),body=row[3])
+            txt = core.Text(num=row[0],date=int(row[1]),incoming=(row[2]==2),body=row[3])
             texts.append(txt)
         return texts
 
     def write(self, texts, outfilepath):
         """ write a Text[] to sqlite file """
-        print "Creating empty Android SQLITE db"
+        print("Creating empty Android SQLITE db")
         conn = sqlite3.connect(outfilepath)
         conn.executescript(INIT_DB_SQL)
         cursor = conn.cursor()
@@ -38,7 +38,7 @@ class Android:
         cursor.close()
         conn.commit()
         conn.close()
-        print "changes saved to %s" % os.path.basename(outfilepath)
+        print("changes saved to %s" % os.path.basename(outfilepath))
 
 
     def write_cursor(self, texts, cursor):
@@ -76,10 +76,10 @@ class Android:
             thread_id = cursor.fetchone()[0]
 
             if False: ## TODO move this debug output to better better comments
-                print "thread_id = "+ str(thread_id)
+                print("thread_id = "+ str(thread_id))
                 cursor.execute( "SELECT * FROM threads WHERE _id=?", [contact_id] )
-                print "updated thread: " + str(cursor.fetchone())
-                print "adding entry to message db: " + str([txt.num,txt.date,txt.body,thread_id,txt.incoming+1])
+                print("updated thread: " + str(cursor.fetchone()))
+                print("adding entry to message db: " + str([txt.num,txt.date,txt.body,thread_id,txt.incoming+1]))
 
             ## TODO try using cur.execute('BEGIN TRANSACTION') and cur.execute('COMMIT') every 1000 for speedup
             #add message to sms table
@@ -94,12 +94,12 @@ class Android:
             sys.stdout.flush()
             i += 1
 
-        print "\nfinished in {0} seconds (average {1}/second)".format((time.time() - starttime), int(i/(time.time() - starttime)))
+        print("\nfinished in {0} seconds (average {1}/second)".format((time.time() - starttime), int(i/(time.time() - starttime))))
 
         if False:
-            print "\n\nthreads: "
+            print("\n\nthreads: ")
             for row in cursor.execute('SELECT * FROM threads'):
-                print row
+                print(row)
 
 
 
@@ -147,10 +147,3 @@ CREATE TRIGGER update_threads_on_update_pdu  AFTER UPDATE of thread_id ON pdu  B
 CREATE INDEX typeThreadIdIndex ON sms (type, thread_id);\
 COMMIT;\
 "
-
-
-
-
-
-
-

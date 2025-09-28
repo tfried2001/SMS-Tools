@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import sqlite3, random, os, sys, time
-import core, android, xmlmms, tabular, ios5, ios6, jsoner, googlevoice
+import android, xmlmms, tabular, ios5, ios6, jsoner, googlevoice
 from sms_exceptions import *
 
 OUTPUT_TYPE_CHOICES = {
@@ -30,7 +30,7 @@ class Text:
         for arg in noneDefaultArgs:
             if not arg in vars(self): vars(self)[arg] = None
     def localStringTime(self):
-        return time.strftime("%Y-%m-%d %I:%M:%S %p %Z", time.localtime(long(self.date)/1000))
+        return time.strftime("%Y-%m-%d %I:%M:%S %p %Z", time.localtime(int(self.date)/1000))
     def __str__(self):
         return "%s(%r)" % (self.__class__, self.__dict__)
     def __repr__(self):
@@ -47,7 +47,7 @@ def getParser(filepath):
         return jsoner.JSONer()
     elif extension == ".db" or extension == ".sqlite":
         try:
-            tableNames = core.getDbTableNames( filepath )
+            tableNames = getDbTableNames( filepath )
         except:
             raise UnrecognizedDBError("Error reading from %s" % filepath)
         if "handle" in tableNames:
@@ -58,8 +58,8 @@ def getParser(filepath):
             return googlevoice.GoogleVoice()
         elif "sms" in tableNames:
             return android.Android()
-        print term.red_on_black("unrecognized database details and structure:")
-        print getDbInfo( file.name )
+        print(term.red_on_black("unrecognized database details and structure:"))
+        print(getDbInfo( filepath ))
         raise UnrecognizedDBError("Unknown sqlite database: [%s]" % os.path.basename(filepath))
     elif extension == ".xml":
         return xmlmms.XMLmms()
@@ -102,7 +102,7 @@ def getColorLibrary():
         import blessings
         return blessings.Terminal() # nice terminal color library
     except:
-        print "install 'blessings' module for great terminal output color"
+        print("install 'blessings' module for great terminal output color")
         class CatchAllPassthrough:
             def __getattr__(self, name): return str
         return CatchAllPassthrough()
@@ -110,15 +110,15 @@ def getColorLibrary():
 term = getColorLibrary()
 
 def warning(string):
-    print core.term.magenta_on_black("WARNING: ") + string
+    print(term.magenta_on_black("WARNING: ") + string)
 
 
 ####  Common Testing functions  ####
 
 def getTestTexts():
     ENCODING_TEST_STRING = u'Δ, Й, ק, ‎ م, ๗, あ, 叶, 葉, and 말.'
-    return [ Text(num="8675309", date=1326497882355L, incoming=True, body="Yo, what's up boo?"), \
-        Text(num="+1(555)565-6565", date=1330568484000L, incoming=False, body="Goodbye cruel testing."),\
+    return [ Text(num="8675309", date=1326497882355, incoming=True, body="Yo, what's up boo?"), \
+        Text(num="+1(555)565-6565", date=1330568484000, incoming=False, body="Goodbye cruel testing."),\
         Text(num="+1(555)565-6565", date=random.getrandbits(43), incoming=False, body=ENCODING_TEST_STRING)]
 
 
@@ -156,4 +156,3 @@ def getDbInfo(file):
         outs += " - %s (%i items): (%s)\n" % (table[0], table[1], colnames)
     cur.close()
     return outs
-
