@@ -1,6 +1,6 @@
 import time, sqlite3, csv
 from datetime import datetime
-import core
+from . import core
 
 class GoogleVoice:
     """ Google Voice (in sqlite or format) reader and writer """

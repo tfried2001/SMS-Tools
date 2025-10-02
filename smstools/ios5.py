@@ -1,5 +1,5 @@
 import sqlite3, os
-import core, sms_exceptions
+from . import core, sms_exceptions
 
 
 class IOS5:

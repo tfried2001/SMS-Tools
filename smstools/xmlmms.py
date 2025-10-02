@@ -1,5 +1,5 @@
 import xml.dom.minidom
-import core
+from . import core
 
 class XMLmms:
     """ Android XML reader and writer """

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import sqlite3, random, os, sys, time
-import android, xmlmms, tabular, ios5, ios6, jsoner, googlevoice
-from sms_exceptions import *
+from . import android, xmlmms, tabular, ios5, ios6, jsoner, googlevoice
+from .sms_exceptions import *
 
 OUTPUT_TYPE_CHOICES = {
     'android': android.Android,
@@ -89,9 +89,13 @@ def getDbTableNames(file):
 
 def getVersion():
     try:
-        import pkg_resources
-        return pkg_resources.get_distribution("smstools").version
-    except:
+        try:
+            from importlib import metadata
+        except ImportError:
+            # for python < 3.8
+            import importlib_metadata as metadata
+        return metadata.version("smstools")
+    except metadata.PackageNotFoundError:
         return "unknown version"
 
 def truncate(text, leng=75):

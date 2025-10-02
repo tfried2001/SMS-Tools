@@ -15,11 +15,14 @@ setup(
     long_description=read('README.rst'),
     author='Tim O\'Brien',
     author_email='timo@t413.com',
-    packages=['smstools', 'smstools.tests'],
+    packages=['smstools', 'smstools.tests', 'blessings'],
     scripts=['bin/smstools'],
     url='https://github.com/t413/SMS-Tools',
     license='CC BY-NC-SA 3.0 US',
-    install_requires=['python-dateutil', 'setuptools'],
+    install_requires=[
+        'python-dateutil',
+        'importlib-metadata; python_version < "3.8"',
+    ],
     extras_require = {
         'colors':  ["blessings>=1.5.0"],
         'autocomplete':  ["argcomplete>=0.8.0"],

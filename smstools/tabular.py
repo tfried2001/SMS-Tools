@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import csv, sys
 from dateutil import parser as dateutil_parser
-import core
+from . import core
 
 
 class Tabular:

@@ -5,3 +5,4 @@ Calls_Griffin/
 build/
 .venv/
 smstools.egg-info/
+.vscode/

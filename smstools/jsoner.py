@@ -1,5 +1,5 @@
 import json
-import core
+from . import core
 
 
 class JSONer:
@@ -22,4 +22,3 @@ class JSONer:
     def write(self, texts, outfilepath):
         with open(outfilepath, 'w') as outfile:
             outfile.write(self.toJson(texts))
-

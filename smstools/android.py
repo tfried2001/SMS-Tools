@@ -1,5 +1,5 @@
 import os, sys, time, sqlite3
-import core, sms_exceptions
+from . import core, sms_exceptions
 
 class Android:
     """ Android sqlite reader and writer """

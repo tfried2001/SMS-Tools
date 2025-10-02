@@ -1,5 +1,5 @@
 import sqlite3, uuid, os
-import core, sms_exceptions
+from . import core, sms_exceptions
 
 
 class IOS6:
